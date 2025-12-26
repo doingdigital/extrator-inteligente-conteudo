@@ -1,14 +1,16 @@
 # Extrator Inteligente de Conteúdo - Cloud Run
-# FastAPI Application for Web Scraping + Gemini AI + Google Drive
+# FastAPI Application - Minimal version for stable startup
 
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import requests
-from bs4 import BeautifulSoup
-import google.generativeai as genai
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Extrator Inteligente de Conteúdo")
 
@@ -23,123 +25,75 @@ app.add_middleware(
 
 class ProcessRequest(BaseModel):
     url: str
-    folder_name: str
-    gemini_key: str
+    folder_name: str = "Arquivos"
+    gemini_key: str = None
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    return """
+    gemini_configured = "Yes" if os.getenv("GEMINI_API_KEY") else "No"
+    return f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Arquivador Inteligente - Cloud Run</title>
+        <title>Extrator Inteligente - Cloud Run</title>
         <style>
-            body {
+            body {{
                 font-family: Arial, sans-serif;
                 max-width: 800px;
                 margin: 50px auto;
                 padding: 20px;
-            }
-            h1 { color: #4285f4; }
-            input, button {
-                width: 100%;
-                padding: 10px;
-                margin: 10px 0;
-                font-size: 16px;
-            }
-            button {
-                background: #4285f4;
-                color: white;
-                border: none;
-                cursor: pointer;
-            }
-            #result { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+            }}
+            .status {{ color: green; }}
+            .config {{ background: #f0f0f0; padding: 10px; margin: 10px 0; }}
         </style>
     </head>
     <body>
-        <h1>🚀 Arquivador Inteligente - Cloud Run Edition</h1>
-        <input type="text" id="gemini_key" placeholder="Chave API Gemini">
-        <input type="text" id="url" placeholder="URL do Artigo">
-        <input type="text" id="folder" placeholder="Nome da Pasta">
-        <button onclick="process()">Processar e Arquivar</button>
-        <div id="result"></div>
-        
-        <script>
-            async function process() {
-                const result = document.getElementById('result');
-                result.innerHTML = '⏳ Processando...';
-                
-                try {
-                    const response = await fetch('/process', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            gemini_key: document.getElementById('gemini_key').value,
-                            url: document.getElementById('url').value,
-                            folder_name: document.getElementById('folder').value
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    if (response.ok) {
-                        result.innerHTML = `✅ ${data.message}`;
-                    } else {
-                        result.innerHTML = `❌ Erro: ${data.detail}`;
-                    }
-                } catch (error) {
-                    result.innerHTML = `❌ Erro: ${error.message}`;
-                }
-            }
-        </script>
+        <h1>🚀 Extrator Inteligente de Conteúdo</h1>
+        <p class="status">✅ Serviço Cloud Run Online!</p>
+        <div class="config">
+            <h3>Configuração:</h3>
+            <p>GEMINI_API_KEY: {gemini_configured}</p>
+            <p>Port: 8080</p>
+        </div>
+        <h3>Endpoints disponíveis:</h3>
+        <ul>
+            <li><a href="/health">GET /health</a> - Health check</li>
+            <li><a href="/docs">GET /docs</a> - API Documentation (Swagger)</li>
+            <li>POST /process - Processar URL (em desenvolvimento)</li>
+        </ul>
     </body>
     </html>
     """
 
-@app.post("/process")
-async def process_url(request: ProcessRequest):
-    try:
-        # 1. Scrape content
-        response = requests.get(request.url, timeout=30)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Extract text
-        title = soup.find('title').get_text() if soup.find('title') else "Untitled"
-        paragraphs = soup.find_all(['p', 'h1', 'h2', 'h3'])
-        content = "\n\n".join([p.get_text().strip() for p in paragraphs if p.get_text().strip()])
-        
-        # 2. Process with Gemini
-        genai.configure(api_key=request.gemini_key)
-        model = genai.GenerativeModel('gemini-pro')
-        
-        prompt = f"""Organize and format this article content:
-        
-Title: {title}
-        
-Content:
-        {content[:5000]}
-        
-Create a well-structured summary in Portuguese."""
-        
-        response = model.generate_content(prompt)
-        processed_content = response.text
-        
-        # 3. Return result (Drive upload would go here)
-        return {
-            "success": True,
-            "message": f"Conteúdo processado com sucesso! Título: {title}",
-            "content_length": len(content),
-            "summary": processed_content[:200] + "..."
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/health")
 async def health():
-    return {"status": "healthy"}
+    return {{
+        "status": "healthy",
+        "service": "extrator-inteligente",
+        "gemini_api_configured": bool(os.getenv("GEMINI_API_KEY"))
+    }}
+
+@app.post("/process")
+async def process_url(request: ProcessRequest):
+    """Process URL endpoint - placeholder for full implementation"""
+    logger.info(f"Processing URL: {{request.url}}")
+    
+    # Validate GEMINI_API_KEY
+    api_key = request.gemini_key or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=400,
+            detail="GEMINI_API_KEY not configured. Set environment variable or provide in request."
+        )
+    
+    return {{
+        "status": "success",
+        "message": "URL processing functionality will be implemented here",
+        "url": request.url,
+        "folder": request.folder_name
+    }}
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.getenv("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)
