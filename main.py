@@ -10,7 +10,8 @@ import logging
 from typing import Optional
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, FileResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 import requests
