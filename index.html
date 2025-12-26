@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extrator Inteligente de Conteúdo | AI Powered</title>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-gradient-start: #1e3c72;
+            --bg-gradient-end: #2a5298;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --radius: 12px;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(to right, #f8fafc, #fff);
+            padding: 30px 40px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--text-main);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .header h1 i {
+            color: var(--primary-color);
+            margin-right: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .gemini-badge {
+            background: linear-gradient(90deg, #4b90ff, #ff5546);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        /* Main Content */
+        .content {
+            padding: 40px;
+        }
+
+        /* Input Group */
+        .input-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .url-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .url-icon {
+            position: absolute;
+            left: 16px;
+            color: var(--text-secondary);
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 14px 16px 14px 45px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        input[type="url"]:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Example Select */
+        .example-select {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            background-color: #f9fafb;
+        }
+
+        /* Button */
+        .extract-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .extract-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .extract-btn:active {
+            transform: translateY(0);
+        }
+
+        .extract-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Results Area */
+        .result-area {
+            display: none; /* Hidden by default */
+            margin-top: 30px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            background: #f8fafc;
+            overflow: hidden;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: #fff;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .result-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .copy-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .copy-btn:hover {
+            background: #f1f5f9;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .result-content {
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap; /* Preserves newlines */
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #334155;
+            font-family: 'Inter', sans-serif; /* or monospace if preferred */
+        }
+
+        /* Scrollbar Styling */
+        .result-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .result-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .result-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        /* Error Message */
+        .error-message {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: var(--radius);
+            background-color: #fef2f2;
+            border: 1px solid #fee2e2;
+            color: var(--error-color);
+            font-size: 0.95rem;
+            align-items: center;
+            gap: 10px;
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                border-radius: 0;
+                height: 100vh;
+                max-width: 100%;
+            }
+            .header, .content {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fa-solid fa-robot"></i> Extrator Inteligente</h1>
+        <div class="subtitle">
+            <i class="fa-solid fa-bolt"></i> Powered by <span class="gemini-badge">Gemini AI</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- Input Section -->
+        <div class="input-group">
+            <label for="urlInput" class="input-label">Insira a URL do Artigo</label>
+            <div class="url-input-wrapper">
+                <i class="fa-solid fa-link url-icon"></i>
+                <input type="url" id="urlInput" placeholder="https://exemplo.com/artigo-interessante" required>
+            </div>
+            
+            <select id="exampleSelect" class="example-select">
+                <option value="" selected disabled>Ou escolha um exemplo...</option>
+                <option value="https://en.wikipedia.org/wiki/Artificial_intelligence">Wikipedia - AI (English)</option>
+                <option value="https://pt.wikipedia.org/wiki/Aprendizado_de_m%C3%A1quina">Wikipedia - Machine Learning (Português)</option>
+                <option value="https://www.bbc.com/news/technology">BBC Technology</option>
+            </select>
+        </div>
+
+        <!-- Action Button -->
+        <button id="extractBtn" class="extract-btn" onclick="handleExtract()">
+            <span class="btn-text">Extrair Conteúdo</span>
+            <span class="spinner"></span>
+            <i class="fa-solid fa-wand-magic-sparkles btn-icon"></i>
+        </button>
+
+        <!-- Error Container -->
+        <div id="errorContainer" class="error-message">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="errorText">Ocorreu um erro ao processar a requisição.</span>
+        </div>
+
+        <!-- Results Container -->
+        <div id="resultArea" class="result-area">
+            <div class="result-header">
+                <span class="result-title">Conteúdo Extraído</span>
+                <button class="copy-btn" onclick="copyToClipboard()">
+                    <i class="fa-regular fa-copy"></i> Copiar
+                </button>
+            </div>
+            <div id="resultContent" class="result-content"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configuration
+    const API_ENDPOINT = 'https://extrator-inteligente-conteudo-683320608896.us-west1.run.app/extract';
+
+    // DOM Elements
+    const urlInput = document.getElementById('urlInput');
+    const exampleSelect = document.getElementById('exampleSelect');
+    const extractBtn = document.getElementById('extractBtn');
+    const btnText = extractBtn.querySelector('.btn-text');
+    const btnIcon = extractBtn.querySelector('.btn-icon');
+    const spinner = extractBtn.querySelector('.spinner');
+    const resultArea = document.getElementById('resultArea');
+    const resultContent = document.getElementById('resultContent');
+    const errorContainer = document.getElementById('errorContainer');
+    const errorText = document.getElementById('errorText');
+
+    // Event Listener for Dropdown
+    exampleSelect.addEventListener('change', function() {
+        urlInput.value = this.value;
+        // Optional: clear previous results when selection changes
+        resetUI();
+    });
+
+    // Event Listener for Enter Key
+    urlInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            handleExtract();
+        }
+    });
+
+    // Reset UI State
+    function resetUI() {
+        resultArea.style.display = 'none';
+        errorContainer.style.display = 'none';
+        resultContent.innerText = '';
+    }
+
+    // Set Loading State
+    function setLoading(isLoading) {
+        if (isLoading) {
+            extractBtn.disabled = true;
+            btnText.innerText = 'Processando...';
+            btnIcon.style.display = 'none';
+            spinner.style.display = 'block';
+            resetUI();
+        } else {
+            extractBtn.disabled = false;
+            btnText.innerText = 'Extrair Conteúdo';
+            btnIcon.style.display = 'inline-block';
+            spinner.style.display = 'none';
+        }
+    }
+
+    // Main Extract Function
+    async function handleExtract() {
+        const url = urlInput.value.trim();
+
+        if (!url) {
+            showError('Por favor, insira uma URL válida.');
+            return;
+        }
+
+        if (!isValidURL(url)) {
+            showError('O formato da URL parece inválido. Certifique-se de incluir http:// ou https://');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await fetch(API_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: url })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showResult(data.extracted_content);
+            } else {
+                showError(data.message || 'Falha ao extrair conteúdo. Verifique a URL.');
+            }
+
+        } catch (error) {
+            console.error('Erro:', error);
+            showError('Erro de conexão. Verifique sua internet ou tente novamente mais tarde.');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // Helper: Show Result
+    function showResult(content) {
+        resultContent.innerText = content;
+        resultArea.style.display = 'block';
+        // Smooth scroll to results
+        resultArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Helper: Show Error
+    function showError(message) {
+        errorText.innerText = message;
+        errorContainer.style.display = 'flex';
+    }
+
+    // Helper: URL Validation
+    function isValidURL(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    // Helper: Copy to Clipboard
+    function copyToClipboard() {
+        const text = resultContent.innerText;
+        
+        navigator.clipboard.writeText(text).then(() => {
+            const copyBtn = document.querySelector('.copy-btn');
+            const originalHTML = copyBtn.innerHTML;
+            
+            // Change button state
+            copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+            copyBtn.style.color = 'var(--success-color)';
+            copyBtn.style.borderColor = 'var(--success-color)';
+            
+            // Revert after 2 seconds
+            setTimeout(() => {
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.style.color = '';
+                copyBtn.style.borderColor = '';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+</script>
+
+</body>
+</html>
