@@ -157,7 +157,6 @@ def create_google_doc(title: str, content: str, folder_id: Optional[str] = None)
 
 # Endpoints
 @app.get("/")
-160
 def root():
     """Serve the frontend HTML interface."""
     import os
