@@ -10,7 +10,7 @@ import logging
 from typing import Optional
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 import requests
@@ -158,69 +158,15 @@ def create_google_doc(title: str, content: str, folder_id: Optional[str] = None)
 # Endpoints
 @app.get("/")
 def root():
-    """Health check endpoint."""
+    """Serve the frontend HTML interface."""
+    return FileResponse("index.html", media_type="text/html")
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint (JSON)."""
     return {
         "status": "ok",
         "service": "Extrator Inteligente de Conteúdo",
         "version": "1.0.0",
-        "gemini_configured": model is not None
+        "gemini_configured": genai._api_key is not None
     }
-
-@app.get("/health")
-def health():
-    """Health check endpoint."""
-    return {"status": "healthy"}
-
-@app.post("/extract", response_model=ExtractResponse)
-async def extract_content(request: ExtractRequest):
-    """Extrai conteúdo de um URL e opcionalmente cria documento no Drive.
-    
-    Args:
-        url: URL da página para extrair
-        folder_id: (Opcional) ID da pasta no Google Drive
-    
-    Returns:
-        ExtractResponse com o conteúdo extraído e informações do documento
-    """
-    try:
-        logger.info(f"Processando URL: {request.url}")
-        
-        # 1. Fetch conteúdo HTML
-        html_content = fetch_url_content(str(request.url))
-        logger.info(f"HTML fetched: {len(html_content)} caracteres")
-        
-        # 2. Extrai com Gemini
-        extracted_data = extract_with_gemini(str(request.url), html_content)
-        logger.info("Conteúdo processado com Gemini")
-        
-        # 3. Criar documento no Drive (se folder_id fornecido)
-        doc_result = None
-        if request.folder_id:
-            doc_result = create_google_doc(
-                title=extracted_data["title"],
-                content=extracted_data["content"],
-                folder_id=request.folder_id
-            )
-        
-        # 4. Preparar resposta
-        return ExtractResponse(
-            success=True,
-            message="Conteúdo extraído com sucesso",
-            extracted_content=extracted_data["content"],
-            document_id=doc_result.get("document_id") if doc_result else None,
-            document_url=doc_result.get("document_url") if doc_result else None
-        )
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Erro inesperado: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erro ao processar: {str(e)}"
-        )
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8080))
-    uvicorn.run(app, host="0.0.0.0", port=port)
