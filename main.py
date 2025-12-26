@@ -157,16 +157,24 @@ def create_google_doc(title: str, content: str, folder_id: Optional[str] = None)
 
 # Endpoints
 @app.get("/")
+160
 def root():
     """Serve the frontend HTML interface."""
-    return FileResponse("index.html", media_type="text/html")
-
-@app.get("/health")
-def health_check():
-    """Health check endpoint (JSON)."""
-    return {
-        "status": "ok",
-        "service": "Extrator Inteligente de Conteúdo",
-        "version": "1.0.0",
-        "gemini_configured": genai._api_key is not None
-    }
+    import os
+    file_path = os.path.join(os.path.dirname(__file__), "index.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    else:
+        # Fallback: return simple HTML redirect
+        from fastapi.responses import HTMLResponse
+        html_content = """
+        <!DOCTYPE html>
+        <html>
+        <head><title>Extrator Inteligente</title></head>
+        <body>
+            <h1>API Funcionando!</h1>
+            <p>Endpoint de extração: POST /extract</p>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content)
